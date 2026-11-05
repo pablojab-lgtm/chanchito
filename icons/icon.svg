@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="120" fill="#DDF3EA"/>
+  <!-- moneda -->
+  <circle cx="256" cy="118" r="54" fill="#F5B82E" stroke="#D99A12" stroke-width="10"/>
+  <rect x="228" y="108" width="56" height="20" rx="10" fill="#D99A12"/>
+  <!-- patas -->
+  <rect x="150" y="360" width="52" height="70" rx="22" fill="#0B7560"/>
+  <rect x="312" y="360" width="52" height="70" rx="22" fill="#0B7560"/>
+  <!-- oreja -->
+  <path d="M168 196 L150 132 L214 168 Z" fill="#0B7560" stroke="#0B7560" stroke-width="14" stroke-linejoin="round"/>
+  <!-- cola -->
+  <path d="M418 268 q34 -10 28 -38 q-6 -22 -26 -10" fill="none" stroke="#0B7560" stroke-width="12" stroke-linecap="round"/>
+  <!-- cuerpo -->
+  <ellipse cx="262" cy="282" rx="168" ry="122" fill="#14A07E"/>
+  <!-- brillo -->
+  <path d="M330 196 q50 14 70 56" fill="none" stroke="#5FD0B0" stroke-width="14" stroke-linecap="round"/>
+  <!-- ranura -->
+  <rect x="226" y="172" width="72" height="16" rx="8" fill="#085A4A"/>
+  <!-- hocico -->
+  <ellipse cx="108" cy="290" rx="42" ry="36" fill="#3DBE9A" stroke="#0B7560" stroke-width="8"/>
+  <ellipse cx="96" cy="290" rx="7" ry="11" fill="#085A4A"/>
+  <ellipse cx="120" cy="290" rx="7" ry="11" fill="#085A4A"/>
+  <!-- ojo y cachete -->
+  <circle cx="184" cy="246" r="14" fill="#10201C"/>
+  <circle cx="189" cy="241" r="5" fill="#fff"/>
+  <ellipse cx="196" cy="300" rx="22" ry="13" fill="#F5B82E" opacity=".55"/>
+</svg>
