@@ -1,14 +1,12 @@
-// Configuración de Firebase.
-// Mientras quede en null, la app funciona en MODO LOCAL (los datos quedan solo en este dispositivo).
-// Para sincronizar con tu familia, seguí los pasos de LEEME.md y pegá acá el objeto que te da Firebase:
-//
-// export const firebaseConfig = {
-//   apiKey: "...",
-//   authDomain: "...",
-//   projectId: "...",
-//   storageBucket: "...",
-//   messagingSenderId: "...",
-//   appId: "..."
-// };
+// Configuración de Firebase (proyecto "chanchito").
+// No es secreta: lo que protege los datos son las reglas de firestore.rules.
+// Si la volvés a poner en null, la app pasa a MODO LOCAL (datos solo en el dispositivo).
 
-export const firebaseConfig = null;
+export const firebaseConfig = {
+  apiKey: "AIzaSyCHpAW5iXZULmmR0CvDn_fFWygDSHfGp3A",
+  authDomain: "chanchito-ac09d.firebaseapp.com",
+  projectId: "chanchito-ac09d",
+  storageBucket: "chanchito-ac09d.firebasestorage.app",
+  messagingSenderId: "693660391736",
+  appId: "1:693660391736:web:804d3e7df4f90c090209cd"
+};
