@@ -7,6 +7,7 @@ App web instalable (PWA) para anotar los gastos e ingresos de la casa entre todo
 - Resumen del mes: cuánto entró, cuánto salió, cuánto queda, en qué se fue la plata y la comparación con el mes anterior.
 - Presupuestos: un tope mensual por categoría, con aviso al llegar al 80% y al pasarse.
 - Gastos fijos (alquiler, servicios, colegio…) y compras en cuotas: se cargan solos cada mes.
+- Lectura de comprobantes con la cámara (gratis, dentro del celular): completa monto, fecha, comercio, medio de pago y categoría; la foto queda adjunta al gasto.
 - Resumen del mes para mandar por WhatsApp (botón en Inicio): totales, categorías, presupuestos, fijos, cuotas y quién pagó.
 - Exportación a Excel (CSV) del mes o de todo.
 - Modo oscuro automático. Funciona sin señal.

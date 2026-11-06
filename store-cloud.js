@@ -82,12 +82,17 @@ export async function createCloud(config) {
         signOut: () => A.signOut(auth),
         subscribe(cb) { subs.add(cb); if (!unsubs.length) start(); else emit(); return () => subs.delete(cb); },
         close() { unsubs.forEach(u => u()); unsubs.length = 0; subs.clear(); },
-        addMovement: m => F.addDoc(movCol, { ...m, createdAt: Date.now() }),
+        addMovement: async m => (await F.addDoc(movCol, { ...m, createdAt: Date.now() })).id,
+
+        // Fotos de comprobantes: van en una colección aparte (no se descargan con la lista de movimientos).
+        saveReceipt: (id, dataUrl) => F.setDoc(F.doc(hRef, 'receipts', id), { dataUrl, createdAt: Date.now() }),
+        async getReceipt(id) { const s = await F.getDoc(F.doc(hRef, 'receipts', id)); return s.exists() ? s.data().dataUrl : null; },
+        deleteReceipt: id => F.deleteDoc(F.doc(hRef, 'receipts', id)),
         updateMovement: (id, patch) => F.updateDoc(F.doc(movCol, id), patch),
         deleteMovement: id => F.deleteDoc(F.doc(movCol, id)),
         async saveRecurring(r) {
-          if (r.id) await F.updateDoc(F.doc(recCol, r.id), clean(r));
-          else await F.addDoc(recCol, { ...r, doneMonths: [], createdAt: Date.now() });
+          if (r.id) { await F.updateDoc(F.doc(recCol, r.id), clean(r)); return r.id; }
+          return (await F.addDoc(recCol, { ...r, doneMonths: [], createdAt: Date.now() })).id;
         },
         deleteRecurring: id => F.deleteDoc(F.doc(recCol, id)),
         updateHousehold: patch => F.updateDoc(hRef, patch),

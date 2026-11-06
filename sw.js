@@ -1,6 +1,6 @@
 ﻿// Service worker: primero la red (así siempre ves la última versión), y si no hay señal, lo guardado.
-const CACHE = 'chanchito-v4';
-const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'store-local.js', 'store-cloud.js', 'firebase-config.js', 'manifest.json', 'icons/icon.svg', 'icons/icon-192.png'];
+const CACHE = 'chanchito-v6';
+const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'store-local.js', 'store-cloud.js', 'lector-ticket.js', 'firebase-config.js', 'manifest.json', 'icons/icon.svg', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

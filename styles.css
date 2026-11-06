@@ -193,6 +193,24 @@ h1, h2, h3 { margin: 0; font-weight: 900; letter-spacing: -.01em; }
 .btn.block { width: 100%; }
 .btn:active { transform: scale(.98); }
 
+/* ===== Comprobantes ===== */
+.scan-btn { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; border: 2px dashed var(--brand); background: var(--brand-soft); color: var(--ink); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
+.scan-btn .ic { font-size: 1.8rem; }
+.scan-btn b { display: block; font-weight: 900; color: var(--brand-strong); }
+.scan-btn small { display: block; font-weight: 700; color: var(--muted); font-size: .82rem; }
+.scan-btn:active { transform: scale(.98); }
+.scan-btn:disabled { opacity: .6; }
+.scan-state { display: flex; gap: 12px; align-items: center; background: var(--surface); box-shadow: var(--shadow); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 14px; font-weight: 700; font-size: .9rem; }
+.scan-state img { width: 56px; height: 72px; object-fit: cover; border-radius: 8px; flex: none; }
+.scan-state.ok { border-left: 4px solid var(--mint); }
+.scan-state.warn { border-left: 4px solid var(--coin); }
+.scan-state.err { border-left: 4px solid var(--coral); }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 3px solid var(--brand-soft); border-top-color: var(--brand); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -2px; margin-right: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.receipt-view { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.88); display: grid; place-items: center; padding: 16px; gap: 12px; grid-template-rows: 1fr auto; }
+.receipt-view img { max-width: 100%; max-height: 80dvh; border-radius: 12px; object-fit: contain; }
+.tag.clip { background: transparent; padding: 0; }
+
 /* ===== Ajustes ===== */
 .set-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .set-row:last-child { border-bottom: 0; }

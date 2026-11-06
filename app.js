@@ -1,5 +1,6 @@
 import { firebaseConfig } from './firebase-config.js';
 import { createLocalStore, uid } from './store-local.js';
+import { readTicketOnDevice, warmUpReader } from './lector-ticket.js';
 
 /* ================= Utilidades ================= */
 const $ = (s, el = document) => el.querySelector(s);
@@ -117,7 +118,7 @@ function ruleMovement(r, m) {
   return {
     type: r.type, amount: r.amount, categoryId: r.categoryId, date: `${m}-${pad(day)}`,
     note: r.note || '', method: r.method || '', by: r.by || '',
-    recurringId: r.id, installment: r.installments ? { n: diff + 1, total: r.installments } : null,
+    recurringId: r.id, receiptId: r.receiptId || null, installment: r.installments ? { n: diff + 1, total: r.installments } : null,
   };
 }
 function materialize() {
@@ -257,7 +258,8 @@ function itemRow(m) {
   const c = catById(m.categoryId);
   const who = memberName(m.by);
   const meta = [c.name, m.method, members().length > 1 ? who : ''].filter(Boolean).join(' · ');
-  const tag = m.installment ? `<span class="tag">Cuota ${m.installment.n}/${m.installment.total}</span>` : m.recurringId ? `<span class="tag">Fijo</span>` : '';
+  const tag = (m.installment ? `<span class="tag">Cuota ${m.installment.n}/${m.installment.total}</span>` : m.recurringId ? `<span class="tag">Fijo</span>` : '')
+    + (m.receiptId ? `<span class="tag clip" title="Tiene comprobante">📎</span>` : '');
   return `<button class="item" data-edit="${esc(m.id)}">
     ${bubble(c)}
     <span class="info"><span class="title">${esc(m.note || c.name)}${tag}</span><span class="meta">${esc(meta)}</span></span>
@@ -402,6 +404,11 @@ function movementForm(m) {
 
   openSheet(`
     <h3>${isNew ? '¿Qué movimiento cargamos?' : 'Editar movimiento'}</h3>
+    ${isNew ? `<button type="button" class="scan-btn" id="scan"><span class="ic">📷</span><span><b>Leer un comprobante</b><small>Sacá una foto del ticket y completo los datos</small></span></button>` : ''}
+    ${m?.receiptId ? `<button type="button" class="btn block" id="view-receipt" style="margin-bottom:12px">🧾 Ver comprobante</button>` : ''}
+    ${!isNew && !m.receiptId && store.saveReceipt ? `<button type="button" class="btn block" id="attach" style="margin-bottom:12px">📎 Adjuntar foto del comprobante</button>` : ''}
+    <input type="file" id="scan-file" accept="image/*" hidden>
+    <div id="scan-state" class="scan-state" hidden></div>
     <form id="mf" autocomplete="off">
       <div class="seg"><button type="button" data-type="gasto">⬇️ Gasto</button><button type="button" data-type="ingreso">⬆️ Ingreso</button></div>
       <label class="amount-input"><span>$</span><input name="amount" inputmode="decimal" placeholder="0" value="${esc(amountToInput(f.amount))}" required aria-label="Monto"></label>
@@ -441,11 +448,59 @@ function movementForm(m) {
     sheet.querySelectorAll('.seg button').forEach(b => b.onclick = () => { type = b.dataset.type; if (catById(cat).kind !== type) cat = ''; paint(); });
     $('#cats', sheet).onclick = e => { const b = e.target.closest('[data-cat]'); if (b) { cat = b.dataset.cat; paint(); } };
     form.addEventListener('input', e => { if (['method', 'cuotas', 'amount'].includes(e.target.name) && isNew) paint(); });
-    if (isNew) setTimeout(() => form.amount.focus(), 250);
+    if (isNew) warmUpReader();   // va descargando el lector mientras elegís la foto
+
+    // ---- Comprobante: foto + lectura en el celular ----
+    const canAttach = !!store.saveReceipt;
+    const kept = canAttach ? ' La foto queda adjunta.' : '';
+    let receipt = null;          // foto achicada para guardar
+    let scanMode = 'read';       // 'read' = leer con IA, 'attach' = solo adjuntar
+    const fileInput = $('#scan-file', sheet);
+    const scanState = $('#scan-state', sheet);
+    const showState = (html, cls = '') => { scanState.hidden = false; scanState.className = 'scan-state ' + cls; scanState.innerHTML = html; };
+    $('#scan', sheet)?.addEventListener('click', () => { scanMode = 'read'; fileInput.click(); });
+    $('#attach', sheet)?.addEventListener('click', () => { scanMode = 'attach'; fileInput.click(); });
+    $('#view-receipt', sheet)?.addEventListener('click', () => viewReceipt(m.receiptId));
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0]; fileInput.value = '';
+      if (!file) return;
+      let img;
+      try { img = await loadImage(file); } catch { showState('No pude abrir esa imagen. Probá con otra.', 'err'); return; }
+      const small = shrink(img, 1100, 0.6, 700_000);
+      receipt = canAttach ? small : null;
+      const thumb = `<img src="${small}" alt="Comprobante">`;
+      if (scanMode === 'attach') { showState(`${thumb}<span>📎 Foto lista. Se guarda al tocar "Guardar cambios".</span>`, 'ok'); return; }
+      showState(`${thumb}<span><span class="spinner"></span> <span id="scan-msg">Preparando el lector (la primera vez tarda un poco)…</span></span>`);
+      sheet.querySelectorAll('button').forEach(b => b.disabled = true);
+      try {
+        const datos = await readTicketOnDevice(img, {
+          hoy: todayISO(),
+          onProgress: p => { const el = $('#scan-msg', sheet); if (el) el.textContent = `Leyendo el comprobante… ${p}%`; },
+        });
+        if (!datos.es_comprobante) { showState(`${thumb}<span>🤔 No pude encontrar los datos en esta foto. Probá con más luz y el ticket derecho, o cargalo a mano.${kept}</span>`, 'warn'); return; }
+        type = 'gasto';
+        if (datos.monto_total > 0) form.amount.value = amountToInput(Math.round(datos.monto_total * 100) / 100);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(datos.fecha || '')) form.date.value = datos.fecha;
+        if (datos.comercio && !form.note.value) form.note.value = datos.comercio.slice(0, 60);
+        if (datos.categoria_id && cats().some(c => c.id === datos.categoria_id && c.kind === 'gasto')) cat = datos.categoria_id;
+        if (METHODS.includes(datos.medio_pago)) form.method.value = datos.medio_pago;
+        if (datos.cuotas > 1 && form.cuotas) { form.method.value = 'Crédito'; form.cuotas.value = Math.min(datos.cuotas, 60); }
+        paint();
+        const dudoso = datos.confianza !== 'alta' || !(datos.monto_total > 0);
+        showState(`${thumb}<span>${!(datos.monto_total > 0) ? '⚠️ No encontré el total. Completá el monto a mano.' : dudoso ? '⚠️ Lo leí, pero no estoy del todo seguro. <b>Revisá el monto</b> antes de guardar.' : '✅ Listo. Revisá los datos y guardá.'}</span>`, dudoso ? 'warn' : 'ok');
+      } catch (err) {
+        console.error(err);
+        showState(`${thumb}<span>😕 ${esc(err.message || 'No se pudo leer.')} Completalo a mano.${kept}</span>`, 'err');
+      } finally {
+        sheet.querySelectorAll('button').forEach(b => b.disabled = false);
+      }
+    });
 
     $('#del', sheet)?.addEventListener('click', async () => {
       if (!confirm('¿Borrar este movimiento?')) return;
-      await store.deleteMovement(m.id); closeSheet(); toast('Movimiento borrado');
+      await store.deleteMovement(m.id);
+      if (m.receiptId && !m.recurringId) store.deleteReceipt?.(m.receiptId).catch(() => {});
+      closeSheet(); toast('Movimiento borrado');
     });
 
     form.onsubmit = async e => {
@@ -454,7 +509,10 @@ function movementForm(m) {
       if (!(amount > 0)) { toast('Poné un monto válido'); form.amount.focus(); return; }
       if (!cat) { toast('Elegí una categoría'); return; }
       const data = { type, amount, categoryId: cat, date: form.date.value, note: form.note.value.trim(), method: form.method.value, by: form.by?.value || store.me?.uid || '' };
+      const submitBtn = form.querySelector('[type="submit"]');
+      submitBtn.disabled = true;
       try {
+        if (receipt) { const rid = uid(); await store.saveReceipt(rid, receipt); data.receiptId = rid; }
         if (!isNew) { await store.updateMovement(m.id, data); toast('Cambios guardados ✔️'); }
         else {
           const n = Number(form.cuotas?.value) || 1;
@@ -471,11 +529,45 @@ function movementForm(m) {
           }
         }
         closeSheet();
-      } catch (err) { console.error(err); toast('No se pudo guardar. Probá de nuevo.'); }
+      } catch (err) { console.error(err); toast('No se pudo guardar. Probá de nuevo.'); submitBtn.disabled = false; }
     };
   });
 }
-const ruleFrom = d => ({ type: d.type, amount: d.amount, categoryId: d.categoryId, note: d.note, method: d.method, by: d.by, day: Number(d.date.slice(8, 10)), startMonth: d.date.slice(0, 7), active: true });
+
+/* ================= Fotos de comprobantes ================= */
+async function loadImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = url; });
+    return img;
+  } finally { setTimeout(() => URL.revokeObjectURL(url), 5000); }
+}
+// Achica la foto a "max" px del lado más largo, en JPEG, bajando calidad hasta entrar en "limit" caracteres.
+function shrink(img, max, quality, limit) {
+  const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  let q = quality, out = c.toDataURL('image/jpeg', q);
+  while (out.length > limit && q > 0.3) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+  return out;
+}
+async function viewReceipt(id) {
+  toast('Abriendo comprobante…');
+  try {
+    const dataUrl = await store.getReceipt(id);
+    if (!dataUrl) return toast('No encontré la foto de este comprobante');
+    const ov = document.createElement('div');
+    ov.className = 'receipt-view';
+    ov.innerHTML = `<img src="${dataUrl}" alt="Comprobante"><button class="btn" aria-label="Cerrar">✕ Cerrar</button>`;
+    ov.onclick = () => ov.remove();
+    document.body.appendChild(ov);
+  } catch (e) { console.error(e); toast('No se pudo abrir el comprobante'); }
+}
+const ruleFrom = d => ({ type: d.type, amount: d.amount, categoryId: d.categoryId, note: d.note, method: d.method, by: d.by, day: Number(d.date.slice(8, 10)), startMonth: d.date.slice(0, 7), active: true, receiptId: d.receiptId || null });
 
 function ruleForm(r) {
   const isNew = !r;

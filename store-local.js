@@ -22,15 +22,16 @@ export function createLocalStore(makeHousehold) {
     me: { uid: 'yo', name: 'Yo' },
     subscribe(cb) { subs.add(cb); cb(structuredClone(state)); return () => subs.delete(cb); },
     close() { subs.clear(); },
-    async addMovement(m) { state.movements.push({ ...m, id: uid(), createdAt: Date.now() }); save(); },
-    async updateMovement(id, patch) {
+    async addMovement(m) { const id = uid(); state.movements.push({ ...m, id, createdAt: Date.now() }); save(); return id; },    async updateMovement(id, patch) {
       const m = state.movements.find(x => x.id === id); if (m) Object.assign(m, patch); save();
     },
     async deleteMovement(id) { state.movements = state.movements.filter(x => x.id !== id); save(); },
     async saveRecurring(r) {
-      if (r.id) { const i = state.recurring.findIndex(x => x.id === r.id); if (i >= 0) state.recurring[i] = { ...state.recurring[i], ...r }; }
-      else state.recurring.push({ ...r, id: uid(), doneMonths: [], createdAt: Date.now() });
+      let id = r.id;
+      if (id) { const i = state.recurring.findIndex(x => x.id === id); if (i >= 0) state.recurring[i] = { ...state.recurring[i], ...r }; }
+      else { id = uid(); state.recurring.push({ ...r, id, doneMonths: [], createdAt: Date.now() }); }
       save();
+      return id;
     },
     async deleteRecurring(id) { state.recurring = state.recurring.filter(x => x.id !== id); save(); },
     async updateHousehold(patch) { Object.assign(state.household, patch); save(); },
