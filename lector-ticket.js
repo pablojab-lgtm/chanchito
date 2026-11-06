@@ -50,7 +50,7 @@ const MESES = { enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6, jul
 
 // Comercios conocidos → nombre lindo + categoría sugerida.
 const COMERCIOS = [
-  [/carrefour/i, 'Carrefour', 'super'], [/\bcoto\b/i, 'Coto', 'super'], [/\bd[i1]a\s?%|supermercados? d[i1]a/i, 'Día', 'super'],
+  [/carrefour/i, 'Carrefour', 'super'], [/\bc?coto\b/i, 'Coto', 'super'], [/\bd[i1]a\s?%|supermercados? d[i1]a/i, 'Día', 'super'],
   [/jumbo/i, 'Jumbo', 'super'], [/\bdisco\b/i, 'Disco', 'super'], [/\bvea\b/i, 'Vea', 'super'], [/chango\s*m[aá]s/i, 'Changomás', 'super'],
   [/la an[oó]nima/i, 'La Anónima', 'super'], [/walmart/i, 'Walmart', 'super'], [/makro/i, 'Makro', 'super'], [/vital\b/i, 'Vital', 'super'],
   [/\bypf\b/i, 'YPF', 'transporte'], [/\bshell\b/i, 'Shell', 'transporte'], [/axion/i, 'Axion', 'transporte'], [/puma energy/i, 'Puma', 'transporte'],

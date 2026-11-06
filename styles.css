@@ -194,11 +194,15 @@ h1, h2, h3 { margin: 0; font-weight: 900; letter-spacing: -.01em; }
 .btn:active { transform: scale(.98); }
 
 /* ===== Comprobantes ===== */
-.scan-btn { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; border: 2px dashed var(--brand); background: var(--brand-soft); color: var(--ink); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px; }
-.scan-btn .ic { font-size: 1.8rem; }
-.scan-btn b { display: block; font-weight: 900; color: var(--brand-strong); }
-.scan-btn small { display: block; font-weight: 700; color: var(--muted); font-size: .82rem; }
-.scan-btn:active { transform: scale(.98); }
+.scan-box { border: 2px dashed var(--brand); background: var(--brand-soft); border-radius: var(--radius); padding: 12px; margin-bottom: 14px; }
+.scan-title { margin: 0 4px 10px; }
+.scan-title b { display: block; font-weight: 900; color: var(--brand-strong); }
+.scan-title small { display: block; font-weight: 700; color: var(--muted); font-size: .82rem; }
+.scan-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.scan-btn { display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; background: var(--brand); color: #fff; border-radius: 16px; padding: 13px 10px; font-weight: 900; font-size: .95rem; box-shadow: 0 4px 12px var(--brand-shadow); }
+.scan-btn.alt { background: var(--surface); color: var(--brand-strong); box-shadow: var(--shadow); }
+.scan-btn .ic { font-size: 1.3rem; }
+.scan-btn:active { transform: scale(.97); }
 .scan-btn:disabled { opacity: .6; }
 .scan-state { display: flex; gap: 12px; align-items: center; background: var(--surface); box-shadow: var(--shadow); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 14px; font-weight: 700; font-size: .9rem; }
 .scan-state img { width: 56px; height: 72px; object-fit: cover; border-radius: 8px; flex: none; }

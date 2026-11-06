@@ -404,9 +404,19 @@ function movementForm(m) {
 
   openSheet(`
     <h3>${isNew ? '¿Qué movimiento cargamos?' : 'Editar movimiento'}</h3>
-    ${isNew ? `<button type="button" class="scan-btn" id="scan"><span class="ic">📷</span><span><b>Leer un comprobante</b><small>Sacá una foto del ticket y completo los datos</small></span></button>` : ''}
+    ${isNew ? `<div class="scan-box">
+        <div class="scan-title"><b>🧾 Leer un comprobante</b><small>Completo los datos solo a partir de la foto</small></div>
+        <div class="scan-actions">
+          <button type="button" class="scan-btn" data-pick="camera"><span class="ic">📷</span>Sacar foto</button>
+          <button type="button" class="scan-btn alt" data-pick="gallery"><span class="ic">🖼️</span>Galería</button>
+        </div>
+      </div>` : ''}
     ${m?.receiptId ? `<button type="button" class="btn block" id="view-receipt" style="margin-bottom:12px">🧾 Ver comprobante</button>` : ''}
-    ${!isNew && !m.receiptId && store.saveReceipt ? `<button type="button" class="btn block" id="attach" style="margin-bottom:12px">📎 Adjuntar foto del comprobante</button>` : ''}
+    ${!isNew && !m.receiptId && store.saveReceipt ? `<div class="scan-actions" style="margin-bottom:12px">
+        <button type="button" class="scan-btn" data-pick="camera" data-attach><span class="ic">📷</span>Sacar foto</button>
+        <button type="button" class="scan-btn alt" data-pick="gallery" data-attach><span class="ic">🖼️</span>Adjuntar de galería</button>
+      </div>` : ''}
+    <input type="file" id="scan-camera" accept="image/*" capture="environment" hidden>
     <input type="file" id="scan-file" accept="image/*" hidden>
     <div id="scan-state" class="scan-state" hidden></div>
     <form id="mf" autocomplete="off">
@@ -455,14 +465,17 @@ function movementForm(m) {
     const kept = canAttach ? ' La foto queda adjunta.' : '';
     let receipt = null;          // foto achicada para guardar
     let scanMode = 'read';       // 'read' = leer con IA, 'attach' = solo adjuntar
-    const fileInput = $('#scan-file', sheet);
+    const cameraInput = $('#scan-camera', sheet);
+    const galleryInput = $('#scan-file', sheet);
     const scanState = $('#scan-state', sheet);
     const showState = (html, cls = '') => { scanState.hidden = false; scanState.className = 'scan-state ' + cls; scanState.innerHTML = html; };
-    $('#scan', sheet)?.addEventListener('click', () => { scanMode = 'read'; fileInput.click(); });
-    $('#attach', sheet)?.addEventListener('click', () => { scanMode = 'attach'; fileInput.click(); });
+    sheet.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => {
+      scanMode = 'attach' in b.dataset ? 'attach' : 'read';
+      (b.dataset.pick === 'camera' ? cameraInput : galleryInput).click();
+    }));
     $('#view-receipt', sheet)?.addEventListener('click', () => viewReceipt(m.receiptId));
-    fileInput.addEventListener('change', async () => {
-      const file = fileInput.files[0]; fileInput.value = '';
+    const onPicked = async (input) => {
+      const file = input.files[0]; input.value = '';
       if (!file) return;
       let img;
       try { img = await loadImage(file); } catch { showState('No pude abrir esa imagen. Probá con otra.', 'err'); return; }
@@ -494,7 +507,9 @@ function movementForm(m) {
       } finally {
         sheet.querySelectorAll('button').forEach(b => b.disabled = false);
       }
-    });
+    };
+    cameraInput.addEventListener('change', () => onPicked(cameraInput));
+    galleryInput.addEventListener('change', () => onPicked(galleryInput));
 
     $('#del', sheet)?.addEventListener('click', async () => {
       if (!confirm('¿Borrar este movimiento?')) return;
