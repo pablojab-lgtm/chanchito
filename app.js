@@ -741,17 +741,21 @@ function showSetup(cloud) {
       <button class="btn block" id="join">Sumarme</button>
     </div>
     <button class="btn ghost" id="out">Usar otra cuenta</button>`);
+  // Un solo toque: se bloquean los botones mientras se crea o se une, para no generar grupos repetidos.
+  const busy = on => appEl.querySelectorAll('.welcome button').forEach(b => { b.disabled = on; b.style.opacity = on ? .6 : ''; });
   $('#create').onclick = async () => {
     const name = $('#hname').value.trim() || 'Mi casa';
+    busy(true); $('#create').textContent = 'Creando…';
     try { const hid = await cloud.createHousehold(makeHousehold(name, cloud.me())); attach(cloud.open(hid)); }
-    catch (e) { console.error(e); toast('No se pudo crear. Probá de nuevo.'); }
+    catch (e) { console.error(e); toast('No se pudo crear. Probá de nuevo.'); busy(false); $('#create').textContent = 'Crear'; }
   };
   $('#join').onclick = async () => {
     let code = $('#hcode').value.trim();
     const m = code.match(/unirse=([\w-]+)/); if (m) code = m[1];
     if (!code) return;
+    busy(true);
     try { await cloud.join(code); attach(cloud.open(code)); toast('¡Listo! Ya estás en el grupo 🐷'); }
-    catch (e) { console.error(e); toast('Ese código no funcionó.'); }
+    catch (e) { console.error(e); toast('Ese código no funcionó.'); busy(false); }
   };
   $('#out').onclick = () => cloud.signOut();
 }
