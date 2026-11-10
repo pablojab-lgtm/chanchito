@@ -65,7 +65,7 @@ function makeHousehold(name, me) {
 let store = null;
 let unsub = null;
 let S = { household: null, movements: [], recurring: [] };
-const ui = { view: 'inicio', month: thisMonth(), type: 'todos', cat: '', q: '' };
+const ui = { view: 'inicio', month: thisMonth(), type: 'todos', cat: '', who: '', q: '' };
 
 const cats = () => S.household?.categories || [];
 const catById = id => cats().find(c => c.id === id) || { id, icon: '❔', name: 'Sin categoría', color: '#8D99AE', kind: 'gasto' };
@@ -272,6 +272,7 @@ function viewMovs() {
   let ms = inMonth(ui.month);
   if (ui.type !== 'todos') ms = ms.filter(m => m.type === ui.type);
   if (ui.cat) ms = ms.filter(m => m.categoryId === ui.cat);
+  if (ui.who) ms = ms.filter(m => (m.by || '_none') === ui.who);
   if (ui.q) { const q = ui.q.toLowerCase(); ms = ms.filter(m => (m.note || '').toLowerCase().includes(q) || catById(m.categoryId).name.toLowerCase().includes(q)); }
   ms.sort((a, b) => (b.date + (b.createdAt || 0)).localeCompare(a.date + (a.createdAt || 0)));
 
@@ -279,6 +280,10 @@ function viewMovs() {
   ms.forEach(m => (groups[m.date] ||= []).push(m));
   const usedCats = [...new Set(inMonth(ui.month).map(m => m.categoryId))].map(catById);
   const net = sum(ms.filter(m => m.type === 'ingreso')) - sum(ms.filter(m => m.type === 'gasto'));
+  // Personas: los integrantes del grupo, más cualquiera que figure en movimientos del mes (por si alguien ya no está).
+  const whoIds = [...new Set([...members().map(p => p.id), ...inMonth(ui.month).map(m => m.by || '_none')])];
+  const people = whoIds.map(id => ({ id, name: id === '_none' ? 'Sin asignar' : (memberName(id) || 'Ex integrante') }));
+  const whoSpent = ui.who ? sum(ms.filter(m => m.type === 'gasto')) : 0;
 
   return `
     ${monthSwitch()}
@@ -287,6 +292,11 @@ function viewMovs() {
       ${[['todos', 'Todos'], ['gasto', '⬇️ Gastos'], ['ingreso', '⬆️ Ingresos']].map(([v, l]) => `<button class="chip ${ui.type === v ? 'on' : ''}" data-type-filter="${v}">${l}</button>`).join('')}
       ${usedCats.map(c => `<button class="chip ${ui.cat === c.id ? 'on' : ''}" data-cat-filter="${esc(c.id)}">${esc(c.icon)} ${esc(c.name)}</button>`).join('')}
     </div>
+    ${people.length > 1 ? `<div class="filters">
+      <button class="chip ${!ui.who ? 'on' : ''}" data-who-filter="">👥 Todos</button>
+      ${people.map(p => `<button class="chip ${ui.who === p.id ? 'on' : ''}" data-who-filter="${esc(p.id)}">🙂 ${esc(p.name)}</button>`).join('')}
+    </div>` : ''}
+    ${ui.who && ms.length && Math.abs(net + whoSpent) > 0.001 ? `<div class="day-head"><span>Gastó ${esc(people.find(p => p.id === ui.who)?.name || '')}</span><span class="num neg">−${fmt(whoSpent)}</span></div>` : ''}
     ${ms.length ? `<div class="day-head"><span>${ms.length} movimiento${ms.length === 1 ? '' : 's'}</span><span class="num ${net >= 0 ? 'pos' : 'neg'}">${net >= 0 ? '+' : '−'}${fmt(Math.abs(net))}</span></div>` : ''}
     ${Object.entries(groups).map(([d, list]) => {
       const dayG = sum(list.filter(m => m.type === 'gasto'));
@@ -771,6 +781,7 @@ document.addEventListener('click', async e => {
   if (d.editCat) { catForm(cats().find(c => c.id === d.editCat)); return; }
   if (d.typeFilter) { ui.type = d.typeFilter; render(); return; }
   if (d.catFilter) { ui.cat = ui.cat === d.catFilter ? '' : d.catFilter; render(); return; }
+  if ('whoFilter' in d) { ui.who = ui.who === d.whoFilter ? '' : d.whoFilter; render(); return; }
   if (d.delMember) {
     const names = { ...S.household.memberNames }; delete names[d.delMember];
     await store.updateHousehold({ memberNames: names, members: Object.keys(names) }); return;
